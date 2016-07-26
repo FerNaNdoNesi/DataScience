@@ -1,4 +1,4 @@
-#Explorando o R01
+#02 - Explorando o RStudio
 
 #Nome dos contributors
 contributors()
@@ -29,4 +29,10 @@ help(mean)
 
 #Se não souber o nome da função (Busca todas as referencias sobre)
 help.search('randomForest')
-help.search('mathplot')
+help.search('matplot')
+??randomFlorest
+
+#Busca direto no site
+RSiteSearch('matplot')
+
+example('matplot')
