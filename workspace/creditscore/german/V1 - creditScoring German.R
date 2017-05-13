@@ -4,12 +4,16 @@ install.packages("tidyr") # Objetivo de remodelar os dados
 install.packages("caTools") #dividir os conjuntos de dados
 install.packages("rpart.plot") # visualizaco da arvore ficar mais legivel
 install.packages("gmodels") # Matriz de confusão
-library(readr) deepnet
+install.packages("ROCR") #criar curva ROC
+install.packages("gplots")
+library(readr) 
 library(dplyr)
 library(tidyr)
 library(caTools)
 library(rpart.plot)
 library(gmodels)
+library(ROCR)
+library(gplots)
 
 
 print("Credit Scoring German Data Set")
@@ -146,20 +150,165 @@ taxa_erro
 
 prop.table(table(test_tree_predict))
 
+#### Avaliando Modelo DataScience #####
+result_previsto <- data.frame( actual = dados_teste$class,
+                               previsto = predict(modelo_arvore, newdata = dados_teste, type = "class")
+)
+head(result_previsto)
+#função manual para criar a matriz de confusão
+confusionMatrix <- matrix(unlist(Map(function(x, y){sum(ifelse(result_previsto[, 1] == x & result_previsto[, 2] == y, 1, 0) )},
+                                     c("Good", "Bad", "Good", "Bad"), c("Good", "Good", "Bad", "Bad"))), nrow = 2)
+confusionMatrix
+
+## Criando um dataframe com as estatisticas dos testes
+df_mat <- data.frame( Category = c("Credito Ruim", "Credito Bom"),
+                      Classificado_como_ruim = c(confusionMatrix[1,1], confusionMatrix[2,1]),
+                      Classificado_como_bom = c(confusionMatrix[1,2], confusionMatrix[2,2]),
+                      Accuracy_Recall = c(Accuracy(confusionMatrix), Recall(confusionMatrix)),
+                      Precision_WAcc = c(Precision(confusionMatrix), W_Accuracy(confusionMatrix)))
+
+print(df_mat)
+
+# Gerando uma curva ROC em R
+install.packages("ROCR")
+install.packages("gplots")
+library("ROCR")
+library("gplots")
+
+# Gerando as classes de dados
+class1 <- predict(modelo_arvore, newdata = dados_teste, type = 'prob')
+class2 <- dados_teste$class
+
+# Gerando a curva ROC
+?prediction
+?performance
+pred <- prediction(class1[,2], class2)
+perf <- performance(pred, "fpr", "tpr") 
+plot(perf, col = rainbow(10))
+
+# Gerando Confusion Matrix com o Caret
+library(caret)
+?confusionMatrix
+confusionMatrix(result_previsto$actual, result_previsto$previsto)
+
+############# Formulas ################
+Accuracy <- function(x){
+  (x[1,1] + x[2,2]) / (x[1,1] + x[1,2] + x[2,1] + x[2,2])
+}
+
+Recall <- function(x){  
+  x[1,1] / (x[1,1] + x[1,2])
+}
+
+Precision <- function(x){
+  x[1,1] / (x[1,1] + x[2,1])
+}
+
+W_Accuracy  <- function(x){
+  (x[1,1] + x[2,2]) / (x[1,1] + 5 * x[1,2] + x[2,1] + x[2,2])
+}
+
+F1 <- function(x){
+  2 * x[1,1] / (2 * x[1,1] + x[1,2] + x[2,1])
+}
+
 ################# RESUMINDO DECISION TREE: Treinando e Testando Modelo #################
 arq_german_credit_data <- read_csv("german-credit-data.csv") #Carrega dados
 arq_german_credit_data$class <- factor(arq_german_credit_data$class, levels = c(1,2), labels = c("Good", "Bad")) #Classe como fator
 set.seed(101) 
-amostra <- sample.split(arq_german_credit_data, SplitRatio = 0.80) #Split dataSet
+amostra <- sample.split(arq_german_credit_data, SplitRatio = 0.70) #Split dataSet
 dados_treino = subset(arq_german_credit_data, amostra == TRUE) #DataSet Treino
 dados_teste = subset(arq_german_credit_data, amostra == FALSE) #DataSet Testte
 modelo_arvore <- rpart(class ~ . , method = 'class', data = dados_treino) #Treino Modelo
 test_tree_predict = predict(modelo_arvore, newdata = dados_teste, type = "class"); #Testa Modelo
-CrossTable(x = test_tree_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
+CT <- CrossTable(x = test_tree_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
 mean(dados_teste$class != test_tree_predict)*100 #Calculando a taxa de erro
 mean(dados_teste$class == test_tree_predict)*100 #Calculando a taxa de acerto
 prp(modelo_arvore)
 
+## classes para gerar curva ROC
+class1 <- predict(modelo_arvore, newdata = dados_teste, type = 'prob')
+class2 <- dados_teste$class
+pred <- prediction(class1[,2], class2)
+perf <- performance(pred, "fpr", "tpr") 
+plot(perf, col = rainbow(10))
+
+## Matriz de confusão manual
+result_previsto <- data.frame( actual = dados_teste$class,
+                               previsto = predict(modelo_arvore, newdata = dados_teste, type = "class")
+)
+confusionMatrix <- matrix(unlist(Map(function(x, y){sum(ifelse(result_previsto[, 1] == x & result_previsto[, 2] == y, 1, 0) )},
+                                     c("Good", "Bad", "Good", "Bad"), c("Good", "Good", "Bad", "Bad"))), nrow = 2)
+## Criando um dataframe com as estatisticas dos testes
+df_mat <- data.frame( Category = c("Credito Ruim", "Credito Bom"),
+                      Classificado_como_ruim = c(confusionMatrix[1,1], confusionMatrix[2,1]),
+                      Classificado_como_bom = c(confusionMatrix[1,2], confusionMatrix[2,2]),
+                      Accuracy_Recall = c(Accuracy(confusionMatrix), Recall(confusionMatrix)),
+                      Precision_WAcc = c(Precision(confusionMatrix), W_Accuracy(confusionMatrix)))
+
+print(df_mat)
+
+## Otimizando o modelo && utilizando Floresta
+# Criando uma Cost Function
+install.packages("randomForest")
+install.packages("C50")
+library(randomForest)
+library(C50)
+Cost_func <- matrix(c(0.0, 1.5, 1.0, 0.0), nrow = 2, dimnames = list(c("Good", "Bad"), c("Good", "Bad")))
+modelo_floresta <- C5.0( class ~ StatusCc
+                         + MesesCc
+                         + HistCredit
+                         + PropEmp
+                         + MontEmp
+                         + Invest
+                         + TrabAtual
+                         + PercentRend
+                         + EstCivil
+                         + OutrosDev
+                         + ResidAtual
+                         + TipoResid
+                         + Idade
+                         + OutrosParc
+                         + TipoMoradia
+                         + NumEmpAtivo
+                         + TipoTrab
+                         + NumPessoas
+                         + Telefone
+                         + TrabEstr, 
+                         data = dados_treino, 
+                         ntree = 100, nodesize = 10, cost = Cost_func)
+print(modelo_floresta)
+
+## classes para gerar curva ROC
+class1F <- predict(modelo_floresta, newdata = dados_teste, type = 'prob')
+class2F <- dados_teste$class
+predF <- prediction(class1F[,2], class2F)
+perfF <- performance(predF, "fpr", "tpr") 
+plot(perfF, col = rainbow(10))
+
+## Matriz de confusão manual
+result_previstoF <- data.frame( actual = dados_teste$class,
+                                previsto = predict(modelo_floresta, newdata = dados_teste, type = "class")
+)
+confusionMatrixF <- matrix(unlist(Map(function(x, y){sum(ifelse(result_previstoF[, 1] == x & result_previstoF[, 2] == y, 1, 0) )},
+                                     c("Good", "Bad", "Good", "Bad"), c("Good", "Good", "Bad", "Bad"))), nrow = 2)
+## Criando um dataframe com as estatisticas dos testes
+df_matF <- data.frame( Category = c("Credito Ruim", "Credito Bom"),
+                      Classificado_como_ruimF = c(confusionMatrixF[1,1], confusionMatrixF[2,1]),
+                      Classificado_como_bomF = c(confusionMatrixF[1,2], confusionMatrixF[2,2]),
+                      Accuracy_RecallF = c(Accuracy(confusionMatrixF), Recall(confusionMatrixF)),
+                      Precision_WAccF = c(Precision(confusionMatrixF), W_Accuracy(confusionMatrixF)))
+
+print(df_matF)
+
+################
+plot(perf, col = rainbow(10))
+plot(perfF, col = rainbow(10))
+print(df_mat)
+print(df_matF)
+library(caret)
+confusionMatrix(result_previsto$actual, result_previsto$previsto)
+confusionMatrix(result_previstoF$actual, result_previstoF$previsto)
 ################# RESUMINDO DEEP LEARNING #################
 install.packages("deepnet") # deepnet
 library(deepnet)
