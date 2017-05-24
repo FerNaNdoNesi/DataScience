@@ -212,20 +212,42 @@ F1 <- function(x){
   2 * x[1,1] / (2 * x[1,1] + x[1,2] + x[2,1])
 }
 
-################# RESUMINDO DECISION TREE: Treinando e Testando Modelo #################
+AUC <- function(x){
+  0.5 * ( 1 + (x[1,1]/(x[1,1]+x[1,2])) * (x[2,1]/(x[2,1]+x[2,2])) ) 
+  #* x[1,1] / (2 * x[1,1] + x[1,2] + x[2,1])
+}
+#CT$t[1,1] #VP
+#CT$t[1,2] #FN
+#CT$t[2,1] #FP
+#CT$t[2,2] #VN
+Accuracy(confusionMatrix)
+Recall(confusionMatrix)
+Precision(confusionMatrix)
+W_Accuracy(confusionMatrix)
+F1(confusionMatrix)
+AuxMat <- matrix(nrow = 10, ncol = 2)
+matr
+################# RESUMINDO DECISION TREE: Treinando e Testando Modelo #################INICIO
 arq_german_credit_data <- read_csv("german-credit-data.csv") #Carrega dados
 arq_german_credit_data$class <- factor(arq_german_credit_data$class, levels = c(1,2), labels = c("Good", "Bad")) #Classe como fator
 set.seed(101) 
-amostra <- sample.split(arq_german_credit_data, SplitRatio = 0.70) #Split dataSet
+AuxMat <- matrix(nrow = 10, ncol = 2)
+for (i in 1:10) {
+amostra <- sample.split(arq_german_credit_data, SplitRatio = 0.50) #Split dataSet
 dados_treino = subset(arq_german_credit_data, amostra == TRUE) #DataSet Treino
 dados_teste = subset(arq_german_credit_data, amostra == FALSE) #DataSet Testte
 modelo_arvore <- rpart(class ~ . , method = 'class', data = dados_treino) #Treino Modelo
 test_tree_predict = predict(modelo_arvore, newdata = dados_teste, type = "class"); #Testa Modelo
-CT <- CrossTable(x = test_tree_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
-mean(dados_teste$class != test_tree_predict)*100 #Calculando a taxa de erro
-mean(dados_teste$class == test_tree_predict)*100 #Calculando a taxa de acerto
+#CT <- CrossTable(x = test_tree_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
+acerto <- mean(dados_teste$class == test_tree_predict)*100 #Calculando a taxa de acerto
+erro <- mean(dados_teste$class != test_tree_predict)*100 #Calculando a taxa de erro
+AuxMat[i,1] = acerto
+AuxMat[i,2] = erro
+}
+AuxMat
 prp(modelo_arvore)
 
+#??CrossTable
 ## classes para gerar curva ROC
 class1 <- predict(modelo_arvore, newdata = dados_teste, type = 'prob')
 class2 <- dados_teste$class
@@ -247,6 +269,48 @@ df_mat <- data.frame( Category = c("Credito Ruim", "Credito Bom"),
                       Precision_WAcc = c(Precision(confusionMatrix), W_Accuracy(confusionMatrix)))
 
 print(df_mat)
+################# RESUMINDO DECISION TREE: Treinando e Testando Modelo #################FIM
+################# RESUMINDO RANDOM FOREST: Treinando e Testando Modelo #################INICIO
+arq_german_credit_data <- read_csv("german-credit-data.csv") #Carrega dados
+arq_german_credit_data$class <- factor(arq_german_credit_data$class, levels = c(1,2), labels = c("Good", "Bad")) #Classe como fator
+set.seed(6374) 
+AuxMat <- matrix(nrow = 13, ncol = 11)
+dimnames(AuxMat) = (list( c("T01","T02","T03","T04","T05","T06","T07","T08","T09","T10","Média","Mediana","DesvioP"),
+                          c("acertos","erros","VP","FN","FP","VN","Precisão","recall","acuracia","F1","AUC")))
+
+Cost_func <- matrix(c(0.0, 4.5, 3.0, 0.0), nrow = 2, dimnames = list(c("Good", "Bad"), c("Good", "Bad")))
+for (i in 1:10) {
+  #set.seed(6374) 
+  amostra <- sample.split(arq_german_credit_data, SplitRatio = 0.70) #Split dataSet
+  dados_treino = subset(arq_german_credit_data, amostra == TRUE) #DataSet Treino
+  dados_teste = subset(arq_german_credit_data, amostra == FALSE) #DataSet Testte
+  #modelo_floresta <- rpart(class ~ . , method = 'class', data = dados_treino) #Treino Modelo
+  modelo_floresta <- C5.0( class ~ ., data = dados_treino, ntree = 100, nodesize = 10, cost = Cost_func)
+  #modelo_floresta <- C5.0( class ~ ., data = dados_treino, ntree = 750, nodesize = 10)
+  test_forest_predict = predict(modelo_floresta, newdata = dados_teste, type = "class"); #Testa Modelo
+  CT <- CrossTable(x = test_forest_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
+  acerto <- mean(dados_teste$class == test_forest_predict)*100 #Calculando a taxa de acerto
+  erro <- mean(dados_teste$class != test_forest_predict)*100 #Calculando a taxa de erro
+  AuxMat[i,1] = acerto
+  AuxMat[i,2] = erro
+  AuxMat[i,3] = CT$t[1,1] #VP
+  AuxMat[i,4] = CT$t[1,2] #FN
+  AuxMat[i,5] = CT$t[2,1] #FP
+  AuxMat[i,6] = CT$t[2,2] #VN
+  AuxMat[i,7] = Precision(CT$t)
+  AuxMat[i,8] = Recall(CT$t)
+  AuxMat[i,9] = Accuracy(CT$t)
+  AuxMat[i,10] = F1(CT$t)
+  AuxMat[i,11] = AUC(CT$t)
+}
+for (j in 1:11) {
+AuxMat[i+1,j] = mean(AuxMat[1:10,j])
+AuxMat[i+2,j] = median(AuxMat[1:10,j])
+AuxMat[i+3,j] = sd(AuxMat[1:10,j])
+}
+AuxMat
+View(AuxMat)
+################# RESUMINDO RANDOM FOREST: Treinando e Testando Modelo #################FIM
 
 ## Otimizando o modelo && utilizando Floresta
 # Criando uma Cost Function
@@ -324,7 +388,12 @@ dnn <- dbn.dnn.train(x, y, hidden = c(5, 5))
 test_Var1 <- c(rnorm(50, 1, 0.5), rnorm(50, -0.6, 0.2))
 test_Var2 <- c(rnorm(50, -0.8, 0.2), rnorm(50, 2, 1))
 test_x <- matrix(c(test_Var1, test_Var2), nrow = 100, ncol = 2)
-nn.test(dnn, test_x, y)
+dnn
+test_x
+y
+nn.test(dnn, test_x, y, t=0.5)
+??nn.test
+nn.predict(dnn, test_x)
 
 #Teste 01 DNN
 as.matrix(dados_treino[c("MesesCc", "MontEmp", "Idade")])
@@ -337,7 +406,9 @@ nn.test(dnn, test_x, dados_teste$class)
 
 #Example 02 RBM (Restricted Boltzmann Machine)
 Var1 <- c(rep(1, 50), rep(0, 50))
+Var1
 Var2 <- c(rep(0, 50), rep(1, 50))
+Var2
 x3 <- matrix(c(Var1, Var2), nrow = 100, ncol = 2)
 x3
 r1 <- rbm.train(x3, 3, numepochs = 20, cd = 10)
@@ -355,3 +426,150 @@ r1 <- rbm.train(x3, 3, numepochs = 20, cd = 10)
 r1
 v <- c(0.2, 0.8)
 h <- rbm.up(r1, v)
+
+
+################# RESUMINDO DEEP LEARNING (DARCH) #################
+#install.packages("darch") # deepnet
+#library(darch)
+
+## Not run:
+data(iris)
+model <- darch(Species ~ ., iris)
+print(model)
+plot(model)
+predictions <- predict(model, newdata = iris, type = "class")
+cat(paste("Incorrect classifications:", sum(predictions != iris[,5])))
+trainData <- matrix(c(0,0,0,1,1,0,1,1), ncol = 2, byrow = TRUE)
+trainTargets <- matrix(c(0,1,1,0), nrow = 4)
+model2 <- darch(trainData, trainTargets, layers = c(2, 10, 1),
+                darch.numEpochs = 500, darch.stopClassErr = 0, retainData = T)
+e <- darchTest(model2)
+cat(paste0("Incorrect classifications on all examples: ", e[3], " (",
+           e[2], "%)\n"))
+plot(model2)
+## End(Not run)
+
+modelo_arvore <- darch(class ~ . , method = 'class', data = dados_treino) #Treino Modelo
+print(modelo_arvore)
+plot(modelo_arvore)
+
+dbn_model <- darch(dados_treino[c("MesesCc", "MontEmp", "Idade", "class")],
+                        dados_treino$class,
+                        method = 'class',
+                        layers = c(3, 10, 2),
+                        darch.numEpochs = 100,
+                        darch.stopClassErr = 0,
+                        retainData = T)
+e <- darchTest(dbn_model)
+print(dbn_model)
+plot(dbn_model)
+e
+test_tree_predict = predict(dbn_model, newdata = dados_teste[c("MesesCc", "MontEmp", "Idade", "class")], type = "class"); #Testa Modelo
+
+CT <- CrossTable(x = test_tree_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
+acerto <- mean(dados_teste$class == test_tree_predict)*100 #Calculando a taxa de acerto
+erro <- mean(dados_teste$class != test_tree_predict)*100 #Calculando a taxa de erro
+AuxMat[i,1] = acerto
+AuxMat[i,2] = erro
+acerto
+erro
+
+
+################# REDE DE CRENÇA PROFUNDA: Treinando e Testando Modelo #################
+arq_german_credit_data <- read_csv("german-credit-data.csv") #Carrega dados
+arq_german_credit_data$class <- factor(arq_german_credit_data$class, levels = c(1,2), labels = c(1, 2)) #Classe como fator
+set.seed() 
+#AuxMat <- matrix(nrow = 10, ncol = 2)
+#for (i in 1:10) {
+  amostra <- sample.split(arq_german_credit_data[c("MesesCc", "MontEmp", "Idade", "class")], SplitRatio = 0.80) #Split dataSet
+  dados_treino = subset(arq_german_credit_data[c("MesesCc", "MontEmp", "Idade", "class")], amostra == TRUE) #DataSet Treino
+  dados_teste = subset(arq_german_credit_data[c("MesesCc", "MontEmp", "Idade", "class")], amostra == FALSE) #DataSet Testte
+  dbn_model <- darch(class ~ .,
+  #                   method = 'class',
+                     data = dados_treino,
+                     #x = dados_treino,
+                     #y = dados_treino$class,
+                     layers = c(4, 100, 3), #Número de neurônios de cada camada
+                     darch.numEpochs = 50,
+                     darch.stopClassErr = 0,
+                     retainData = T#,
+  #                   bp.learnRate = .1,
+#                     darch.isClass = T, #Se a saída deve ser tratada como rótulos de classe durante o ajuste fino e taxas de classificação devem ser impresso.
+ #                    darch.fineTuneFunction = "backpropagation"
+                    ) #Treino Modelo
+  test_dbn_predict = predict(dbn_model, newdata = dados_teste, type = "class"); #Testa Modelo
+  CT <- CrossTable(x = test_dbn_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
+  mean(dados_teste$class == test_dbn_predict)*100 #Calculando a taxa de acerto
+  mean(dados_teste$class != test_dbn_predict)*100 #Calculando a taxa de erro
+
+#  AuxMat[i,1] = acerto
+#  AuxMat[i,2] = erro
+#}
+AuxMat
+prp(dbn_model)
+
+################# RESUMINDO REDE DE CRENÇA PROFUNDA: Treinando e Testando Modelo #################INICIO
+install.packages("darch")
+library(darch)
+arq_german_credit_data <- read_csv("german-credit-data.csv") #Carrega dados
+arq_german_credit_data$class <- factor(arq_german_credit_data$class, levels = c(1,2), labels = c(1, 0)) #Classe como fator
+set.seed(6374) 
+AuxMat <- matrix(nrow = 13, ncol = 11)
+dimnames(AuxMat) = (list( c("T01","T02","T03","T04","T05","T06","T07","T08","T09","T10","Média","Mediana","DesvioP"),
+                          c("acertos","erros","VP","FN","FP","VN","Precisão","recall","acuracia","F1","AUC")))
+for (i in 1:3) {
+  #set.seed(6374) 
+  amostra <- sample.split(arq_german_credit_data, SplitRatio = 0.70) #Split dataSet
+  dados_treino = subset(arq_german_credit_data, amostra == TRUE) #DataSet Treino
+  dados_teste = subset(arq_german_credit_data, amostra == FALSE) #DataSet Testte
+  #modelo_arvore <- rpart(class ~ . , method = 'class', data = dados_treino) #Treino Modelo
+  #modelo_floresta <- C5.0( class ~ ., data = dados_treino, ntree = 750, nodesize = 10)
+  dbn_model <- darch(class ~ .,data = dados_treino,
+                     layers = c(2, 10, 1),
+                     darch.numEpochs = 5,
+                     darch.stopClassErr = 0,
+                     retainData = T) #Treino Modelo
+  #model2 <- darch(dados_treino[c("MontEmp", "Idade")], dados_treino$class, layers = c(2, 10, 2),
+  #                darch.numEpochs = 50, darch.stopClassErr = 0, retainData = T)
+  test_dbn_predict = predict(dbn_model, newdata = dados_teste, type = "class"); #Testa Modelo
+  CT <- CrossTable(x = test_dbn_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
+  acerto <- mean(dados_teste$class == test_dbn_predict)*100 #Calculando a taxa de acerto
+  erro <- mean(dados_teste$class != test_dbn_predict)*100 #Calculando a taxa de erro
+  AuxMat[i,1] = acerto
+  AuxMat[i,2] = erro
+  AuxMat[i,3] = CT$t[1,1] #VP
+  AuxMat[i,4] = CT$t[1,2] #FN
+  AuxMat[i,5] = CT$t[2,1] #FP
+  AuxMat[i,6] = CT$t[2,2] #VN
+  AuxMat[i,7] = Precision(CT$t)
+  AuxMat[i,8] = Recall(CT$t)
+  AuxMat[i,9] = Accuracy(CT$t)
+  AuxMat[i,10] = F1(CT$t)
+  AuxMat[i,11] = AUC(CT$t)
+}
+for (j in 1:11) {
+  AuxMat[i+1,j] = mean(AuxMat[1:3,j])
+  AuxMat[i+2,j] = median(AuxMat[1:3,j])
+  AuxMat[i+3,j] = sd(AuxMat[1:3,j])
+}
+AuxMat
+View(AuxMat)
+################# RESUMINDO REDE DE CRENÇA PROFUNDA: Treinando e Testando Modelo #################FIM
+
+## Not run:
+data(iris)
+model <- darch(Species ~ ., iris)
+print(model)
+predictions <- predict(model, newdata = iris, type = "class")
+cat(paste("Incorrect classifications:", sum(predictions != iris[,5])))
+trainData <- matrix(c(0,0,0,1,1,0,1,1), ncol = 2, byrow = TRUE)
+trainTargets <- matrix(c(0,1,1,0), nrow = 4)
+model2 <- darch(trainData, trainTargets, layers = c(2, 10, 1),
+                darch.numEpochs = 50, darch.stopClassErr = 0, retainData = T)
+e <- darchTest(model2)
+cat(paste0("Incorrect classifications on all examples: ", e[3], " (",
+           e[2], "%)\n"))
+plot(model2)
+## End(Not run)
+test_iris_predict = predict(model2, newdata = trainData, type = "class"); #Testa Modelo
+CT <- CrossTable(x = test_iris_predict, y = trainTargets, prop.chisq = FALSE) ## confusion matrix
