@@ -511,27 +511,30 @@ prp(dbn_model)
 ################# RESUMINDO REDE DE CRENÇA PROFUNDA: Treinando e Testando Modelo #################INICIO
 install.packages("darch")
 library(darch)
-arq_german_credit_data <- read_csv("german-credit-data.csv") #Carrega dados
-arq_german_credit_data$class <- factor(arq_german_credit_data$class, levels = c(1,2), labels = c(1, 0)) #Classe como fator
-set.seed(6374) 
+arq_german_credit_data <- read_csv("credit-dataset-num.csv") #Carrega dados
+glimpse(arq_german_credit_data)
+arq_german_credit_data$class <- factor(arq_german_credit_data$class, levels = c(1,2), labels = c(1, 2)) ##c("Bom", "Ruim")) #Classe como fator
+dados_norm$class <- factor(arq_german_credit_data$class, levels = c(1,2), labels = c("Bom", "Ruim"))
+table(arq_german_credit_data$class)
+table(dados_norm$class)
 AuxMat <- matrix(nrow = 13, ncol = 11)
 dimnames(AuxMat) = (list( c("T01","T02","T03","T04","T05","T06","T07","T08","T09","T10","Média","Mediana","DesvioP"),
                           c("acertos","erros","VP","FN","FP","VN","Precisão","recall","acuracia","F1","AUC")))
-for (i in 1:3) {
-  #set.seed(6374) 
+for (i in 1:4) {
+  #dados_norm <- as.data.frame(lapply(arq_german_credit_data, normalizar))
+  #glimpse(dados_norm)
+  
+  #arq_german_credit_data <- dados_norm
   amostra <- sample.split(arq_german_credit_data, SplitRatio = 0.70) #Split dataSet
   dados_treino = subset(arq_german_credit_data, amostra == TRUE) #DataSet Treino
   dados_teste = subset(arq_german_credit_data, amostra == FALSE) #DataSet Testte
+  #glimpse(dados_treino)
+  #glimpse(dados_teste)
   #modelo_arvore <- rpart(class ~ . , method = 'class', data = dados_treino) #Treino Modelo
   #modelo_floresta <- C5.0( class ~ ., data = dados_treino, ntree = 750, nodesize = 10)
-  dbn_model <- darch(class ~ .,data = dados_treino,
-                     layers = c(2, 10, 1),
-                     darch.numEpochs = 5,
-                     darch.stopClassErr = 0,
-                     retainData = T) #Treino Modelo
-  #model2 <- darch(dados_treino[c("MontEmp", "Idade")], dados_treino$class, layers = c(2, 10, 2),
-  #                darch.numEpochs = 50, darch.stopClassErr = 0, retainData = T)
-  test_dbn_predict = predict(dbn_model, newdata = dados_teste, type = "class"); #Testa Modelo
+  dbn_model <- darch(class ~ ., data = dados_treino, layers = c(4, 10, 2),
+                     darch.numEpochs = 10, retainData = T) #Treino Modelo
+  test_dbn_predict <- predict(dbn_model, newdata = dados_teste, type = "class"); #Testa Modelo
   CT <- CrossTable(x = test_dbn_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
   acerto <- mean(dados_teste$class == test_dbn_predict)*100 #Calculando a taxa de acerto
   erro <- mean(dados_teste$class != test_dbn_predict)*100 #Calculando a taxa de erro
@@ -548,28 +551,27 @@ for (i in 1:3) {
   AuxMat[i,11] = AUC(CT$t)
 }
 for (j in 1:11) {
-  AuxMat[i+1,j] = mean(AuxMat[1:3,j])
-  AuxMat[i+2,j] = median(AuxMat[1:3,j])
-  AuxMat[i+3,j] = sd(AuxMat[1:3,j])
+  AuxMat[i+1,j] = mean(AuxMat[1:4,j])
+  AuxMat[i+2,j] = median(AuxMat[1:4,j])
+  AuxMat[i+3,j] = sd(AuxMat[1:4,j])
 }
 AuxMat
 View(AuxMat)
 ################# RESUMINDO REDE DE CRENÇA PROFUNDA: Treinando e Testando Modelo #################FIM
 
-## Not run:
-data(iris)
-model <- darch(Species ~ ., iris)
-print(model)
-predictions <- predict(model, newdata = iris, type = "class")
-cat(paste("Incorrect classifications:", sum(predictions != iris[,5])))
-trainData <- matrix(c(0,0,0,1,1,0,1,1), ncol = 2, byrow = TRUE)
-trainTargets <- matrix(c(0,1,1,0), nrow = 4)
-model2 <- darch(trainData, trainTargets, layers = c(2, 10, 1),
-                darch.numEpochs = 50, darch.stopClassErr = 0, retainData = T)
-e <- darchTest(model2)
-cat(paste0("Incorrect classifications on all examples: ", e[3], " (",
-           e[2], "%)\n"))
-plot(model2)
-## End(Not run)
-test_iris_predict = predict(model2, newdata = trainData, type = "class"); #Testa Modelo
-CT <- CrossTable(x = test_iris_predict, y = trainTargets, prop.chisq = FALSE) ## confusion matrix
+## R=un:############# TESTANDO UMA REDE DE CRENÇA PROFUNDA (IRIS)##
+glimpse(iris)
+#Split exemplo 1
+irisMod = subset(iris, Species != 'virginica')
+amostra <- sample.split(irisMod, SplitRatio = 0.50) #Split dataSet
+dados_treino = subset(irisMod, amostra == TRUE) #DataSet Treino
+dados_teste = subset(irisMod, amostra == FALSE) #DataSet Teste
+glimpse(dados_treino)
+glimpse(dados_teste)
+model <- darch(Species ~ ., dados_treino, layers = c(4, 10, 2),
+               darch.numEpochs = 100, retainData = T)
+predictions <- predict(model, newdata = dados_teste, type = "class")
+
+CT <- CrossTable(x = predictions, y = dados_teste$Species, prop.chisq = FALSE) ## confusion matrix
+CT
+## End(R=un)
