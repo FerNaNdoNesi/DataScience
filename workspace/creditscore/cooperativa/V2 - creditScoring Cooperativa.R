@@ -32,8 +32,9 @@ print("Credit Scoring German Data Set")
 
 setwd("~/git/dataScience/workspace/creditscore/cooperativa")
 
-
 arq_coop_credit_data <- read_csv("coop-dataset.csv")
+arq_coop_credit_data <- read_csv("mod_dataSet01.csv")
+arq_coop_credit_data <- read_csv("mod_dataSet01_equ.csv")
 orig <- read_csv("orig.csv")
 glimpse(arq_coop_credit_data) #Visualização rápida
 glimpse(orig) #Visualização rápida
@@ -54,18 +55,21 @@ arq_coop_credit_data$Renda[is.na(arq_coop_credit_data$Renda)] <- 5400
 
 glimpse(arq_coop_credit_data)
 ######################### Valores categóricos em numéricos ######################### 
-
+??normalizar
 dados_norm <- as.data.frame(lapply(arq_coop_credit_data, normalizar))
-table(arq_coop_credit_data$class)
+table(arq_coop_credit_data$class) #1214 # 79 | 248 79
 table(dados_norm$class)
-prop.table(table(arq_coop_credit_data$class))
+prop.table(table(arq_coop_credit_data$class)) # 0.75 0.25
 prop.table(table(dados_norm$class))
-arq_coop_credit_data$class <- factor(arq_coop_credit_data$class, levels = c(0,1), labels = c("Bom", "Ruim")) #Classe como fator
+arq_coop_credit_data$class <- factor(arq_coop_credit_data$class, levels = c(1,2), labels = c("Bom", "Ruim")) #Classe como fator
+arq_coop_credit_data$class <- factor(arq_coop_credit_data$class, levels = c("Bom", "Ruim"), labels = c(1, 2)) #Classe como fator
 dados_norm$class <- factor(dados_norm$class, levels = c(0,1), labels = c("Bom", "Ruim")) #Classe como fator
-
+dados_norm$class <- factor(orig$class, levels = c("Bom", "Ruim"), labels = c("Bom", "Ruim")) #Classe como fator
+labels(table(dados_norm$class))
 
 glimpse(arq_coop_credit_data)
 glimpse(dados_norm)
+table(dados_norm$class)
 #dados_norm <- as.data.frame(lapply(arq_german_credit_data, normalizar))
 #glimpse(dados_norm)
 
@@ -78,8 +82,21 @@ arq_coop_credit_data$Invest <- as.double(arq_coop_credit_data$Invest)
 arq_coop_credit_data$ParcMid <- as.double(arq_coop_credit_data$ParcMid)
 glimpse(arq_coop_credit_data)
 
-#dados_norm <- as.data.frame(lapply(mod_arq_german_credit_data, scale))
-table(arq_coop_credit_data$ValEmp)
+#INICIO CRES
+arq_coop_credit_data$TempCli <- as.double(arq_coop_credit_data$TempCli)
+arq_coop_credit_data$tot_emprestimo_liquidado <- as.double(arq_coop_credit_data$tot_emprestimo_liquidado)
+arq_coop_credit_data$tot_emprestimo_ativo <- as.double(arq_coop_credit_data$tot_emprestimo_ativo)
+arq_coop_credit_data$tot_parcela_ativa_em_dia <- as.double(arq_coop_credit_data$tot_parcela_ativa_em_dia)
+arq_coop_credit_data$tot_parcela_ativa_atrasada <- as.double(arq_coop_credit_data$tot_parcela_ativa_atrasada)
+arq_coop_credit_data$tot_parcela_pago_em_dia <- as.double(arq_coop_credit_data$tot_parcela_pago_em_dia)
+arq_coop_credit_data$atraso_min <- as.double(arq_coop_credit_data$atraso_min)
+arq_coop_credit_data$atraso_mid <- as.double(arq_coop_credit_data$atraso_mid)
+arq_coop_credit_data$atraso_max <- as.double(arq_coop_credit_data$atraso_max)
+#arq_coop_credit_data$class <- as.double(arq_coop_credit_data$class)
+glimpse(arq_coop_credit_data)
+
+dados_norm <- as.data.frame(lapply(arq_coop_credit_data, scale))
+table(arq_coop_credit_data$class)
 #arq_coop_credit_data$ValEmp <- lapply(arq_coop_credit_data$ValEmp, quantize)
 
 quantize <- function(x, nlevs = 5, maxval = 1000, 
@@ -334,6 +351,9 @@ print(df_mat)
 ################# RESUMINDO DECISION TREE: Treinando e Testando Modelo #################FIM
 ################# RESUMINDO RANDOM FOREST: Treinando e Testando Modelo #################INICIO
 
+table(dados_treino$class) #Bom Ruim #807   54
+table(dados_teste$class) #Bom Ruim #407   25 
+#####
 library(C50)
 AuxMat <- matrix(nrow = 13, ncol = 11)
 dimnames(AuxMat) = (list( c("T01","T02","T03","T04","T05","T06","T07","T08","T09","T10","Média","Mediana","DesvioP"),
@@ -588,19 +608,20 @@ prp(dbn_model)
 ################# RESUMINDO REDE DE CRENÇA PROFUNDA: Treinando e Testando Modelo #################INICIO
 install.packages("darch")
 library(darch)
-glimpse(arq_german_credit_data)
+glimpse(arq_coop_credit_data)
 glimpse(mod_arq_german_credit_data)
 glimpse(dados_norm)
 
-table(arq_german_credit_data$class)
-table(mod_arq_german_credit_data$class)
-table(dados_norm$class)
+table(arq_coop_credit_data$class)
+table(dados_treino$class) #165 53
+table(dados_teste$class) #83 26
 
 AuxMat <- matrix(nrow = 13, ncol = 11)
 dimnames(AuxMat) = (list( c("T01","T02","T03","T04","T05","T06","T07","T08","T09","T10","Média","Mediana","DesvioP"),
                           c("acertos","erros","VP","FN","FP","VN","Precisão","recall","acuracia","F1","AUC")))
-dataset <- dados_norm
-for (i in 1:3) {
+#dataset <- dados_norm
+dataset <- arq_coop_credit_data
+for (i in 1:10) {
   #dados_norm <- as.data.frame(lapply(arq_german_credit_data, normalizar))
   #dados_norm <- as.data.frame(lapply(arq_german_credit_data, scale))
   #glimpse(dados_norm)
@@ -614,7 +635,7 @@ for (i in 1:3) {
   #modelo_arvore <- rpart(class ~ . , method = 'class', data = dados_treino) #Treino Modelo
   #modelo_floresta <- C5.0( class ~ ., data = dados_treino, ntree = 750, nodesize = 10)
   dbn_model <- darch(class ~ ., data = dados_treino, layers = c(20, 10, 2),
-                     darch.numEpochs = 10, darch.stopClassErr = 0, retainData = T) #Treino Modelo
+                     darch.numEpochs = 50, darch.stopClassErr = 0, retainData = T) #Treino Modelo
   test_dbn_predict <- predict(dbn_model, newdata = dados_teste, type = "class"); #Testa Modelo
   CT <- CrossTable(x = test_dbn_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
   acerto <- mean(dados_teste$class == test_dbn_predict)*100 #Calculando a taxa de acerto
@@ -632,9 +653,9 @@ for (i in 1:3) {
   AuxMat[i,11] = AUC(CT$t)
 }
 for (j in 1:11) {
-  AuxMat[i+1,j] = mean(AuxMat[1:3,j])
-  AuxMat[i+2,j] = median(AuxMat[1:3,j])
-  AuxMat[i+3,j] = sd(AuxMat[1:3,j])
+  AuxMat[i+1,j] = mean(AuxMat[1:10,j])
+  AuxMat[i+2,j] = median(AuxMat[1:10,j])
+  AuxMat[i+3,j] = sd(AuxMat[1:10,j])
 }
 AuxMat
 View(AuxMat)
