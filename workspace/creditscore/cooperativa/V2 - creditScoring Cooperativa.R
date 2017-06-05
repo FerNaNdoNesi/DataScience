@@ -290,7 +290,7 @@ dimnames(AuxMat) = (list( c("T01","T02","T03","T04","T05","T06","T07","T08","T09
                           c("acertos","erros","VP","FN","FP","VN","Precisão","recall","acuracia","F1","AUC")))
 dataset <- dados_norm #dataset <- dataSet
 for (i in 1:10) {
-  amostra <- sample.split(dataset, SplitRatio = 0.70) #Split dataSet
+  amostra <- ?sample.split(dataset, SplitRatio = 0.70) #Split dataSet
   dados_treino = subset(dataset, amostra == TRUE) #DataSet Treino
   dados_teste = subset(dataset, amostra == FALSE) #DataSet Testte
   
@@ -320,3 +320,11 @@ for (j in 1:11) {
 AuxMat
 View(AuxMat)
 ################# MODELO REDE DE CRENÇA PROFUNDA: Treinando e Testando Modelo #################FIM
+
+table(dataSet$class)
+table(dados_treino$class)
+table(dados_teste$class)
+prop.table(table(dataSet$class)) # 0.75 0.25
+prop.table(table(dados_treino$class)) # 0.75 0.25
+prop.table(table(dados_teste$class)) # 0.75 0.25
+
