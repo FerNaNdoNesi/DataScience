@@ -290,12 +290,12 @@ dimnames(AuxMat) = (list( c("T01","T02","T03","T04","T05","T06","T07","T08","T09
                           c("acertos","erros","VP","FN","FP","VN","Precisão","recall","acuracia","F1","AUC")))
 dataset <- dados_norm #dataset <- dataSet
 for (i in 1:10) {
-  amostra <- ?sample.split(dataset, SplitRatio = 0.70) #Split dataSet
+  amostra <- sample.split(dataset, SplitRatio = 0.70) #Split dataSet
   dados_treino = subset(dataset, amostra == TRUE) #DataSet Treino
   dados_teste = subset(dataset, amostra == FALSE) #DataSet Testte
   
-  dbn_model <- darch(class ~ ., data = dados_treino, layers = c(10, 5, 2),
-                     darch.numEpochs = 10, darch.stopClassErr = 0, retainData = T) #Treino Modelo
+  dbn_model <- darch(class ~ ., data = dados_treino, layers = c(11, 5, 2),
+                     darch.numEpochs = 50, darch.stopClassErr = 0, retainData = T) #Treino Modelo
   test_dbn_predict <- predict(dbn_model, newdata = dados_teste, type = "class"); #Testa Modelo
   CT <- CrossTable(x = test_dbn_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
   acerto <- mean(dados_teste$class == test_dbn_predict)*100 #Calculando a taxa de acerto
