@@ -300,12 +300,13 @@ summary(arq_german_credit_data[c("PercentRend", "ResidAtual", "NumEmpAtivo", "Nu
 #library(randomForest)
 
 glimpse(mod_arq_german_credit_data) # Avalidando a importância de todas as variaveis
-modelo_atributos_1 <- randomForest(class ~ . ,
+atributosGerman <- randomForest(class ~ . ,
                                    data = mod_arq_german_credit_data,
-                                   ntree = 100, nodesize = 10,
+                                   ntree = 300, nodesize = 10,
                                    importance = TRUE)
 
-varImpPlot(modelo_atributos_1) # Plotando as variaveis por grau de importancia
+varImpPlot(atributosGerman) # Plotando as variaveis por grau de importancia
+varImpPlot(atributosReal)
 
 # Removendo variaveis colineares
 modelo_atributos_2 <- randomForest(class ~ . - NumPessoas
@@ -492,15 +493,22 @@ for (i in 1:10) {
   dados_treino = subset(dataset, amostra == TRUE) #DataSet Treino
   dados_teste = subset(dataset, amostra == FALSE) #DataSet Testte
   #forest_model <- C5.0( class ~ ., data = dados_treino, ntree = 100, nodesize = 10, cost = Cost_func)
-  forest_model <- C5.0( class ~ ., data = dados_treino, ntree = 750, nodesize = 10)
-  #forest_model <- C5.0( class ~ + StatusCc
-  #                               + MesesCc
-  #                               + HistCredit
-  #                               + Invest
-  #                               + MontEmp
-  #                               + OutrosDev
-  #                               + OutrosParc
-  #                               + Idade, data = dados_treino, ntree = 750, nodesize = 10)
+  #forest_model <- C5.0( class ~ ., data = dados_treino, ntree = 750, nodesize = 10)
+  forest_model <- C5.0( class ~ + StatusCc
+                                 + MesesCc
+                                 + HistCredit
+                                 + MontEmp
+                                 + Invest
+                                 + OutrosDev
+                                 + TipoResid
+                                 + OutrosParc
+                                 + Idade
+                                 + PropEmp,
+                        #         + PercentRend
+                        #         + TrabAtual
+                        #         + ResidAtual
+                        #         + TipoMoradia,
+                        data = dados_treino, ntree = 750, nodesize = 10)
   test_forest_predict = predict(forest_model, newdata = dados_teste, type = "class"); #Testa Modelo
   CT <- CrossTable(x = test_forest_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
   acerto <- mean(dados_teste$class == test_forest_predict)*100 #Calculando a taxa de acerto

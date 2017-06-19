@@ -17,12 +17,13 @@ library(ROCR)
 library(gplots)
 library(randomForest)
 
-print("Credit Scoring German Data Set")
+print("Credit Scoring Real Data Set")
 
 setwd("~/git/dataScience/workspace/creditscore/cooperativa")
 
 ################ Conjunto de dados ################
 arq_coop_credit_data <- read_csv("dataSet_treino_final.csv")
+#arq_coop_credit_data <- read_csv("dataSet_treino_selecao.csv")
 glimpse(arq_coop_credit_data) #Visualização rápida
 table(arq_coop_credit_data$class)
 prop.table(table(arq_coop_credit_data$class)) #verifica proporção
@@ -58,6 +59,7 @@ any(is.na(dataSet$Renda))
 summary(dataSet$NumDep) #média 0
 prop.table(table(dataSet$NumDep))
 dataSet$NumDep[is.na(dataSet$NumDep)] <- 0 #0.5814 -> 0.5920 percent de 0
+#dataSet$EstCivil[is.na(dataSet$EstCivil)] <- 0
 
 summary(dataSet$Renda) #média: 5081
 prop.table(table(dataSet$Renda))
@@ -194,6 +196,50 @@ df_saida <- bikes[, c("cnt", rownames(modelo$importance))]
 #Fazendo criação dos modelos ao fim do script (Random Forest)
 #Fazendo criação dos modelos ao fim do script (DBN)
 ################# ETAPA 05: Avaliando o modelo #################
+################# ETAPA 06: Seleção de características #################
+
+#Feature Selection: Remover do dataSet  as variáveis que não serão úteis pra a criação do modelo preditivo
+#Métodos:
+#1. Teste do Qui-quadrado
+#2. Coeficiente de correlação
+#3. Algoritmos de Eliminação Recursiva
+#4. Algoritmos de regularização (Lasso, Elastic, Net, Ridge Regression)
+#Feature selection <> Redução de dimensionalidade
+#(Redução de dimensionalidade = Criação de novas combinações dos atributos)
+#(Feature selection = Calcular o nível de significância de cada variável e eliminar aquelas com significância mais baixa)
+# Criando um modelo randomForest para calcular a significância de cada variável
+
+# Criando um modelo para identificar os atributos com maior importancia para o modelo preditivo
+#require(randomForest)
+#library(randomForest)
+
+#glimpse(dataSet)
+#glimpse(dados_norm)
+#atributosReal <- randomForest(class ~ . ,
+#                                data = dados_norm,
+#                                ntree = 300, nodesize = 10,
+#                                importance = TRUE)
+
+#varImpPlot(atributosReal) # Plotando as variaveis por grau de importancia
+
+
+# Removendo variaveis colineares
+#modelo_atributos_2 <- randomForest(class ~ . - NumPessoas
+#                                   - NumEmpAtivo
+#                                   - PercentRend
+#                                   - Telefone
+#                                   - TrabEstr
+#                                   - OutrosDev
+#                                   - TipoMoradia
+#                                   - OutrosParc
+#                                   - TipoTrab
+#                                   - ResidAtual
+#                                   - EstCivil, 
+#                                   data = dados_norm, 
+#                                   ntree = 100, nodesize = 10,
+#                                   importance = TRUE)
+
+#varImpPlot(modelo_atributos_2) # Plotando as variaveis por grau de importancia
 
 ############# Formulas ################
 Accuracy <- function(x){
