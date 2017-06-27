@@ -78,6 +78,21 @@ quantize.num <- function(x, nlevs = 10, maxval = 1000,
   print(cuts)
   x <- cut(x, breaks = cuts, order_result = ordered)
 }
+
+#var <- dataSet$Renda
+#var <- dataSet$TempCli
+#var <- dataSet$Carteira
+#var <- dataSet$Invest
+#var <- dataSet$PercentRend
+#var <- dataSet$Idade
+#var <- dataSet$ValEmp
+#var <- dataSet$ValParc 
+#length(table(var))
+#min(var)
+#max(var)
+#quantize.num(var, 5, maxval = max(var), min(var), FALSE)
+#quantize.num(var, 5, maxval = 100, 0, FALSE)
+
 #toFactors <- c("Renda", "PercentRend", "Idade", "Carteira")
 #maxVals <- c(1000000, 1000000, 100, 1000000)
 #facNames <- unlist(lapply(toFactors, function(x) paste(x, "_f", sep = "")))
