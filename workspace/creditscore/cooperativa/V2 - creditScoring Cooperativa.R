@@ -389,3 +389,35 @@ prop.table(table(dataSet$class)) # 0.75 0.25
 prop.table(table(dados_treino$class)) # 0.75 0.25
 prop.table(table(dados_teste$class)) # 0.75 0.25
 
+
+
+
+
+######## Testes estatísticos T-Student ##############
+precisao_rf_real <- c(0.8958,0.9010,0.8873,
+                      0.9002,0.9092,0.9116,
+                      0.9151,0.8790,0.9006,
+                      0.8967)
+
+precisao_dbn_real <- c(0.9297,0.9198,0.9344,
+                       0.8861,0.9258,0.9100,
+                       0.9363,0.9269,0.9120,
+                       0.8817)
+
+acuracia_rf_real <- c(0.8053,0.7963,0.8039,
+                      0.8053,0.8113,0.8119,
+                      0.8146,0.8064,0.8050,
+                      0.8070)
+
+acuracia_dbn_real <- c(0.8047,0.8064,0.7998,
+                       0.7927,0.8106,0.7844,
+                       0.8045,0.7976,0.8080,
+                       0.7954)
+t.test(precisao_rf_real, precisao_dbn_real, alternative = 'less')
+t.test(acuracia_rf_real, acuracia_dbn_real, alternative = 'less')
+
+#intervalo de confiança - variabilidade
+var.test(precisao_rf_real,precisao_dbn_real, alternative = 'less')
+var.test(acuracia_rf_real,acuracia_dbn_real, alternative = 'less')
+
+

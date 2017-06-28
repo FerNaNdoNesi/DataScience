@@ -178,6 +178,25 @@ head(dados_norm)
 # SOMENTE EXEMPLO (nesta base de dados não temos este problema pois os 3 anteriores foram discretizados) sobrando apenas o seguintes:
 summary(arq_german_credit_data[c("PercentRend", "ResidAtual", "NumEmpAtivo", "NumPessoas")])
 
+#Quantizar atributos
+## Funcao para converter variaveis numericas para fator
+quantize.num <- function(x, nlevs = 5, maxval = 1000, 
+                         minval = 0, ordered = TRUE){
+  cuts <- seq(min(x), max(x), length.out = nlevs + 1)
+  cuts[1] <- minval
+  cuts[nlevs + 1] <- maxval
+  print(cuts)
+  x <- cut(x, breaks = cuts, order_result = ordered)
+}
+var <- arq_german_credit_data$Idade
+var <- arq_german_credit_data$MesesCc
+var <- arq_german_credit_data$MontEmp
+length(table(var))
+min(var)
+max(var)
+quantize.num(var, 5, maxval = max(var), min(var), FALSE)
+quantize.num(var, 5, maxval = 100, 0, FALSE)
+
 
 ################# ETAPA 03: Separando conjunto Treino e Teste #################
 #MODIFICADO PARA FAZER ESTA ETAPA JUNTO COM TREINAMENTO
@@ -489,7 +508,7 @@ dataset <- arq_german_credit_data
 Cost_func <- matrix(c(0.0, 4.5, 3.0, 0.0), nrow = 2, dimnames = list(c("Good", "Bad"), c("Good", "Bad")))
 for (i in 1:10) {
   #set.seed(6374) 
-  amostra <- sample.split(dataset, SplitRatio = 0.70) #Split dataSet
+  amostra <- sample.split(dataset, SplitRatio = 0.90) #Split dataSet
   dados_treino = subset(dataset, amostra == TRUE) #DataSet Treino
   dados_teste = subset(dataset, amostra == FALSE) #DataSet Testte
   #forest_model <- C5.0( class ~ ., data = dados_treino, ntree = 100, nodesize = 10, cost = Cost_func)
@@ -760,3 +779,35 @@ predictions <- predict(model, newdata = dados_teste, type = "class")
 CT <- CrossTable(x = predictions, y = dados_teste$Species, prop.chisq = FALSE) ## confusion matrix
 CT
 ## End(R=un)
+
+
+
+
+######## Testes estatísticos T-Student ##############
+
+precisao_rf_german <- c(0.8408163,0.8553719,0.8523207,
+                        0.8510638,0.8609866,0.8281938,
+                        0.8709677,0.8051948,0.9173913,
+                        0.8781513)
+
+precisao_dbn_german <- c(0.904762,0.870293,0.901786,
+                         0.792373,0.873418,0.876068,
+                         0.873874,0.905579,0.837004,
+                         0.828452)
+
+acuracia_rf_german <- c(0.7544910,0.7514970,0.7327327,
+                        0.6955224,0.7048193,0.6886228,
+                        0.7297297,0.6916168,0.7349398,
+                        0.7417417)
+
+acuracia_dbn_german <- c(0.773134,0.766467,0.715569,
+                         0.751497,0.756757,0.746988,
+                         0.757485,0.734328,0.738739,
+                         0.739521)
+t.test(precisao_rf_german, precisao_dbn_german, alternative = 'less')
+t.test(acuracia_rf_german, acuracia_dbn_german, alternative = 'less')
+
+#intervalo de confiança - variabilidade
+var.test(precisao_rf_german,precisao_dbn_german, alternative = 'less')
+var.test(acuracia_rf_german,acuracia_dbn_german, alternative = 'less')
+
