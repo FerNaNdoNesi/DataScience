@@ -310,7 +310,8 @@ for (i in 1:10) {
   dados_treino = subset(dataset, amostra == TRUE) #DataSet Treino
   dados_teste = subset(dataset, amostra == FALSE) #DataSet Teste
   #modelo_floresta <- C5.0( class ~ . - NumDep - EmpAtiv - Invest, data = dados_treino, ntree = 750, nodesize = 10)
-  modelo_floresta <- C5.0( class ~ ., data = dados_treino, ntree = 750, nodesize = 10)
+  modelo_floresta <- C5.0( class ~ . -ParcMax -ParcMid -Carteira, data = dados_treino, ntree = 100, nodesize = 10)
+  #modelo_floresta <- C5.0( class ~ ., data = dados_treino, ntree = 750, nodesize = 10)
   test_forest_predict = predict(modelo_floresta, newdata = dados_teste, type = "class"); #Testa Modelo
   CT <- CrossTable(x = test_forest_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
   acerto <- mean(dados_teste$class == test_forest_predict)*100 #Calculando a taxa de acerto
@@ -334,6 +335,8 @@ AuxMat[i+3,j] = sd(AuxMat[1:10,j])
 }
 AuxMat
 View(AuxMat)
+#AuxMatV1 <- AuxMat
+#View(AuxMatV1)
 ################# MODELO RANDOM FOREST: Treinando e Testando Modelo #################FIM
 
 ################# MODELO REDE DE CRENÇA PROFUNDA: Treinando e Testando Modelo #################INICIO
@@ -355,8 +358,10 @@ for (i in 1:10) {
   dados_treino = subset(dataset, amostra == TRUE) #DataSet Treino
   dados_teste = subset(dataset, amostra == FALSE) #DataSet Testte
   
-  dbn_model <- darch(class ~ ., data = dados_treino, layers = c(11, 5, 2),
-                     darch.numEpochs = 50, darch.stopClassErr = 0, retainData = T) #Treino Modelo
+  #dbn_model <- darch(class ~ ., data = dados_treino, layers = c(11, 5, 2),
+  #                   darch.numEpochs = 50, darch.stopClassErr = 0, retainData = T) #Treino Modelo
+  dbn_model <- darch(class ~ . -NumDep -EmpAtiv -Invest -Renda -PercentRend -Idade, data = dados_treino, layers = c(11, 5, 2),
+                     darch.numEpochs = 5, darch.stopClassErr = 0, retainData = T) #Treino Modelo
   test_dbn_predict <- predict(dbn_model, newdata = dados_teste, type = "class"); #Testa Modelo
   CT <- CrossTable(x = test_dbn_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
   acerto <- mean(dados_teste$class == test_dbn_predict)*100 #Calculando a taxa de acerto
