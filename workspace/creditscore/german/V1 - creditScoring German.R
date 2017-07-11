@@ -527,7 +527,7 @@ for (i in 1:10) {
                         #         + TrabAtual
                         #         + ResidAtual
                         #         + TipoMoradia,
-                        data = dados_treino, ntree = 750, nodesize = 10)
+                        data = dados_treino, ntree = 100, nodesize = 10)
   test_forest_predict = predict(forest_model, newdata = dados_teste, type = "class"); #Testa Modelo
   CT <- CrossTable(x = test_forest_predict, y = dados_teste$class, prop.chisq = FALSE) ## confusion matrix
   acerto <- mean(dados_teste$class == test_forest_predict)*100 #Calculando a taxa de acerto
@@ -590,7 +590,7 @@ for (i in 1:10) {
                              + OutrosParc
                              + Idade, data = dados_treino, layers = c(20, 10, 2),
                      darch.numEpochs = 5, darch.stopClassErr = 0, retainData = T,
-                     #darch.layerFunctionDefault = "sigmoid",
+                     darch.layerFunctionDefault = "sigmoid",
                      rbm.numCD = 10
                      #rbm.numEpochs = 20
                      ) #Treino Modelo
@@ -808,6 +808,17 @@ t.test(precisao_rf_german, precisao_dbn_german, alternative = 'less')
 t.test(acuracia_rf_german, acuracia_dbn_german, alternative = 'less')
 
 #intervalo de confiança - variabilidade
-var.test(precisao_rf_german,precisao_dbn_german, alternative = 'less')
-var.test(acuracia_rf_german,acuracia_dbn_german, alternative = 'less')
+var.test(precisao_rf_german,precisao_dbn_german, alternative = 'two.sided')
+var.test(acuracia_rf_german,acuracia_dbn_german, alternative = 'two.sided')
 
+# Verificar se são normais 
+qqplot(precisao_rf_german); qqline(precisao_rf_german)
+qqplot(precisao_dbn_german); qqline(precisao_dbn_german)
+
+# Verificar se as variâncias são iguais
+var(precisao_rf_german) ; var(precisao_dbn_german)
+var.test(precisao_rf_german, precisao_dbn_german)
+
+# Teste t
+t.test(precisao_rf_german, precisao_dbn_german, alternative = 'two.sided', conf.level = 0.45)
+t.test(acuracia_rf_german, acuracia_dbn_german, alternative = 'two.sided')
