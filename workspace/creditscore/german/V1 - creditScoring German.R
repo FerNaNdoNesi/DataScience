@@ -588,10 +588,13 @@ for (i in 1:10) {
                              + MontEmp
                              + OutrosDev
                              + OutrosParc
-                             + Idade, data = dados_treino, layers = c(20, 10, 2),
+                             + Idade, data = dados_treino, layers = c(8, 10, 2),
                      darch.numEpochs = 5, darch.stopClassErr = 0, retainData = T,
-                     darch.layerFunctionDefault = "sigmoid",
-                     rbm.numCD = 10
+                     darch.unitFunction = "sigmoidUnit",
+                     darch.initialMomentum = 0.5,
+                     rbm.numCD = 10,
+                     bp.learnRate = 0.8,
+                     darch.fineTuneFunction = "backpropagation"
                      #rbm.numEpochs = 20
                      ) #Treino Modelo
   
